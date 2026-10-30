@@ -1,0 +1,29 @@
+# Environment variables
+.env
+.env.backup
+.env.production
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build artifacts
+dist/
+build/
+.output/
+
+# Database
+*.sqlite
+*.sqlite-journal
+
+# IDE & OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
+# Caches & temporary files
+.phpunit.cache/
+.vite/
+.turbo/
