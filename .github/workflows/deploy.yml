@@ -1,0 +1,103 @@
+# A cada push na main: testa o backend, compila o frontend e, se tudo passar,
+# pede ao Coolify para fazer o deploy da versão nova.
+#
+# Segredos necessários no GitHub (Settings > Secrets and variables > Actions):
+#   COOLIFY_WEBHOOK  URL de deploy do recurso no Coolify (aba Webhooks do recurso no Coolify)
+#   COOLIFY_TOKEN    Token de API do Coolify (Keys & Tokens > API tokens, com permissão "deploy")
+
+name: Testes e Deploy no Coolify
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  back:
+    name: Backend - Testes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:H5Ocyiu/6pPeSdvSJGuu7H1VkC2fLTo+4m/DNsJG2AE=
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ':memory:'
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar PHP e Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite, pdo_pgsql, pgsql, zip, bcmath
+          coverage: none
+
+      - name: Obter diretório de cache do Composer
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache de dependências do Composer
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Instalar dependências do PHP
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Executar suíte de testes do Laravel (PHPUnit)
+        run: php artisan test
+
+  front:
+    name: Frontend - Build de Produção (React + Vite)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependências (npm ci)
+        run: npm ci
+
+      - name: Build de produção (TypeScript + Vite)
+        run: npm run build
+
+  deploy:
+    name: Deploy no Coolify
+    needs: [back, front]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Disparar o deploy no Coolify
+        env:
+          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          # Sem os segredos definidos, o deploy é pulado de forma segura sem quebrar o CI
+          if [ -z "$COOLIFY_WEBHOOK" ] || [ -z "$COOLIFY_TOKEN" ]; then
+            echo "::notice::Segredos COOLIFY_WEBHOOK ou COOLIFY_TOKEN não definidos; deploy pulado."
+            exit 0
+          fi
+
+          echo "Disparando webhook de deploy no Coolify..."
+          curl --fail-with-body -sS -X GET "$COOLIFY_WEBHOOK" \
+            -H "Authorization: Bearer $COOLIFY_TOKEN"
+          echo "Deploy solicitado com sucesso no Coolify!"
