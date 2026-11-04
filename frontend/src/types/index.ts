@@ -194,3 +194,4 @@ export interface CreatedPlaylist {
   spotify_url?: string;
   created_at: string;
 }
+

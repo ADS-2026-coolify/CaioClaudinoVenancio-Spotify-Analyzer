@@ -246,3 +246,4 @@ export const ArtistsPage: React.FC = () => {
     </div>
   );
 };
+

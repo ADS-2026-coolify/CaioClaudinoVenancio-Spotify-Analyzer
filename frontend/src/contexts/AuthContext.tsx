@@ -26,13 +26,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkUserStatus = async () => {
     try {
       setIsLoading(true);
+
+      // Check if arriving from Spotify OAuth callback with auth_token
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenFromUrl = urlParams.get('auth_token');
+      if (tokenFromUrl) {
+        localStorage.setItem('auth_token', tokenFromUrl);
+        localStorage.removeItem('spotify_demo_mode');
+        urlParams.delete('auth_token');
+        urlParams.delete('auth');
+        const remainingQuery = urlParams.toString();
+        const cleanUrl = window.location.pathname + (remainingQuery ? `?${remainingQuery}` : '');
+        window.history.replaceState({}, '', cleanUrl);
+      }
+
+      const isDemoActive = localStorage.getItem('spotify_demo_mode') === 'true';
+
       const data = await api.getCurrentUser();
       if (data.authenticated && data.user) {
         setUser(data.user);
         setIsAuthenticated(true);
         setIsDemo(false);
         localStorage.removeItem('spotify_demo_mode');
-      } else if (isDemo) {
+      } else if (isDemoActive) {
         // Keep demo active
         setUser({
           id: 9999,
@@ -50,7 +66,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated(false);
       }
     } catch {
-      if (isDemo) {
+      const isDemoActive = localStorage.getItem('spotify_demo_mode') === 'true';
+      if (isDemoActive) {
         setUser({
           id: 9999,
           spotify_id: 'demo_user',
@@ -77,6 +94,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithSpotify = async () => {
     try {
+      localStorage.removeItem('spotify_demo_mode');
+      localStorage.removeItem('auth_token');
       const data = await api.getAuthUrl();
       if (data.auth_url) {
         window.location.href = data.auth_url;
@@ -88,6 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const enableDemoMode = () => {
+    localStorage.removeItem('auth_token');
     localStorage.setItem('spotify_demo_mode', 'true');
     setIsDemo(true);
     setUser({
@@ -105,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const exitDemoMode = () => {
     localStorage.removeItem('spotify_demo_mode');
+    localStorage.removeItem('auth_token');
     setIsDemo(false);
     setUser(null);
     setIsAuthenticated(false);
@@ -121,8 +142,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.warn('Erro ao desconectar sessão:', e);
     } finally {
+      localStorage.removeItem('spotify_demo_mode');
+      localStorage.removeItem('auth_token');
       setUser(null);
       setIsAuthenticated(false);
+      setIsDemo(false);
       window.location.href = '/';
     }
   };
@@ -152,3 +176,4 @@ export const useAuth = () => {
   }
   return context;
 };
+

@@ -120,3 +120,4 @@ export const RecentlyPlayedPage: React.FC = () => {
     </div>
   );
 };
+

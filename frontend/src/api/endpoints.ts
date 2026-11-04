@@ -122,3 +122,4 @@ export const api = {
     return res.data.playlists;
   },
 };
+

@@ -37,3 +37,4 @@ export const CardSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => {
     </div>
   );
 };
+
