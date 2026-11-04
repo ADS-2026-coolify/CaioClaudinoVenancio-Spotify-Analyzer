@@ -38,3 +38,4 @@ class GenreAnalyticsController extends Controller
         ]);
     }
 }
+

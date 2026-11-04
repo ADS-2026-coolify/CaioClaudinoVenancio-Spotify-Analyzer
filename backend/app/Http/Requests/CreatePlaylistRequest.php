@@ -39,3 +39,4 @@ class CreatePlaylistRequest extends FormRequest
         ];
     }
 }
+

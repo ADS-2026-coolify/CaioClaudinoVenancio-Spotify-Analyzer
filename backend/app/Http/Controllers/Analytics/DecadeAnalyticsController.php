@@ -38,3 +38,4 @@ class DecadeAnalyticsController extends Controller
         ]);
     }
 }
+

@@ -30,6 +30,10 @@ class SpotifyApiService
             ->acceptJson()
             ->timeout(20);
 
+        if (!config('spotify.ssl_verify', true)) {
+            $request = $request->withoutVerifying();
+        }
+
         $response = match (strtoupper($method)) {
             'GET' => $request->get($url, $options['query'] ?? []),
             'POST' => $request->post($url, $options['json'] ?? $options['body'] ?? []),
@@ -224,3 +228,4 @@ class SpotifyApiService
         return $lastResponse;
     }
 }
+

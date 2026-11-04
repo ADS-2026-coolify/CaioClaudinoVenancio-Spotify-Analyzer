@@ -75,4 +75,6 @@ return [
 
     'token_refresh_buffer' => 5, // Minutos antes da expiração para renovar o token
 
+    'ssl_verify' => env('SPOTIFY_SSL_VERIFY', false),
+
 ];

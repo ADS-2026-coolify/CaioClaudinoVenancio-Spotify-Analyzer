@@ -48,14 +48,19 @@ class SpotifyAuthService
         $redirectUri = config('spotify.redirect_uri');
         $tokenUrl = config('spotify.token_url', 'https://accounts.spotify.com/api/token');
 
-        $response = Http::asForm()
+        $request = Http::asForm()
             ->withBasicAuth($clientId, $clientSecret)
-            ->timeout(15)
-            ->post($tokenUrl, [
-                'grant_type' => 'authorization_code',
-                'code' => $code,
-                'redirect_uri' => $redirectUri,
-            ]);
+            ->timeout(15);
+
+        if (!config('spotify.ssl_verify', true)) {
+            $request = $request->withoutVerifying();
+        }
+
+        $response = $request->post($tokenUrl, [
+            'grant_type' => 'authorization_code',
+            'code' => $code,
+            'redirect_uri' => $redirectUri,
+        ]);
 
         if ($response->failed()) {
             Log::error('Erro ao trocar authorization code por token no Spotify', [
@@ -78,9 +83,14 @@ class SpotifyAuthService
     {
         $apiBaseUrl = config('spotify.api_base_url', 'https://api.spotify.com/v1');
 
-        $profileResponse = Http::withToken($tokenData['access_token'])
-            ->timeout(15)
-            ->get("{$apiBaseUrl}/me");
+        $request = Http::withToken($tokenData['access_token'])
+            ->timeout(15);
+
+        if (!config('spotify.ssl_verify', true)) {
+            $request = $request->withoutVerifying();
+        }
+
+        $profileResponse = $request->get("{$apiBaseUrl}/me");
 
         if ($profileResponse->failed()) {
             Log::error('Falha ao obter perfil do usuário no Spotify', [
@@ -120,3 +130,4 @@ class SpotifyAuthService
         return $user;
     }
 }
+

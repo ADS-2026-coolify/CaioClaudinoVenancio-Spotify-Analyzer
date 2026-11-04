@@ -67,3 +67,4 @@ class RecentlyPlayedController extends Controller
         ]);
     }
 }
+

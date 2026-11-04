@@ -79,13 +79,18 @@ class SpotifyTokenService
         $clientSecret = config('spotify.client_secret');
         $tokenUrl = config('spotify.token_url', 'https://accounts.spotify.com/api/token');
 
-        $response = Http::asForm()
+        $request = Http::asForm()
             ->withBasicAuth($clientId, $clientSecret)
-            ->timeout(15)
-            ->post($tokenUrl, [
-                'grant_type' => 'refresh_token',
-                'refresh_token' => $token->refresh_token,
-            ]);
+            ->timeout(15);
+
+        if (!config('spotify.ssl_verify', true)) {
+            $request = $request->withoutVerifying();
+        }
+
+        $response = $request->post($tokenUrl, [
+            'grant_type' => 'refresh_token',
+            'refresh_token' => $token->refresh_token,
+        ]);
 
         if ($response->failed()) {
             Log::error('Falha ao renovar token do Spotify', [
@@ -129,3 +134,4 @@ class SpotifyTokenService
         return !$token->isExpired() || !empty($token->refresh_token);
     }
 }
+

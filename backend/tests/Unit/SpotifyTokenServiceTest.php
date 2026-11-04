@@ -85,3 +85,4 @@ class SpotifyTokenServiceTest extends TestCase
         $this->assertEquals('brand_new_refreshed_access_token', $validToken);
     }
 }
+

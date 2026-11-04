@@ -70,3 +70,4 @@ class ArtistAnalyticsController extends Controller
         ]);
     }
 }
+

@@ -164,3 +164,4 @@ class AuthTest extends TestCase
         $this->assertGuest();
     }
 }
+

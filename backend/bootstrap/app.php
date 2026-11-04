@@ -19,6 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'spotify.connected' => EnsureSpotifyConnected::class,
         ]);
 
+        $middleware->web(append: [
+            \App\Http\Middleware\AuthenticateWithToken::class,
+        ]);
+
         // Exclude API routes from CSRF token verification (SPA uses token/cookie auth or session)
         $middleware->validateCsrfTokens(except: [
             'api/*',

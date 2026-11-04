@@ -30,6 +30,7 @@ class SpotifyAuthController extends Controller
     {
         $state = Str::random(40);
         $request->session()->put('spotify_oauth_state', $state);
+        Cache::put("spotify_oauth_state_{$state}", true, now()->addMinutes(15));
 
         $authUrl = $this->authService->getAuthorizationUrl($state);
 
@@ -63,9 +64,10 @@ class SpotifyAuthController extends Controller
         $code = $request->query('code');
         $state = $request->query('state');
         $storedState = $request->session()->pull('spotify_oauth_state');
+        $validCachedState = !empty($state) && Cache::pull("spotify_oauth_state_{$state}");
 
         // Validate state parameter to protect against CSRF attacks
-        if (empty($code) || empty($state) || $state !== $storedState) {
+        if (empty($code) || empty($state) || ($state !== $storedState && !$validCachedState)) {
             Log::warning('Validação de state falhou no callback do Spotify OAuth', [
                 'has_code' => !empty($code),
                 'received_state' => $state,
@@ -82,12 +84,16 @@ class SpotifyAuthController extends Controller
             Auth::login($user, remember: true);
             $request->session()->regenerate();
 
+            // Generate an auth token for persistent cross-origin authentication
+            $authToken = Str::random(64);
+            Cache::put("auth_token_{$authToken}", $user->id, now()->addDays(7));
+
             Log::info('Usuário autenticado com sucesso via Spotify', [
                 'user_id' => $user->id,
                 'spotify_id' => $user->spotify_id,
             ]);
 
-            return redirect("{$frontendUrl}/dashboard?auth=success");
+            return redirect("{$frontendUrl}/dashboard?auth=success&auth_token={$authToken}");
         } catch (SpotifyApiException $e) {
             Log::error('Erro ao processar callback do Spotify: ' . $e->getMessage());
             return redirect("{$frontendUrl}/login?error=" . urlencode('Falha ao comunicar com Spotify'));
@@ -144,6 +150,11 @@ class SpotifyAuthController extends Controller
             // Invalidate user cache keys
             Cache::forget("user_dashboard_summary_{$user->id}");
 
+            $bearer = $request->bearerToken() ?: $request->header('X-Auth-Token');
+            if ($bearer) {
+                Cache::forget("auth_token_{$bearer}");
+            }
+
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -159,3 +170,4 @@ class SpotifyAuthController extends Controller
         ]);
     }
 }
+

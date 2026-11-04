@@ -32,3 +32,4 @@ class InsightsController extends Controller
         ]);
     }
 }
+

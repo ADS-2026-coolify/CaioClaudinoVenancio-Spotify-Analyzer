@@ -34,3 +34,4 @@ class EnsureSpotifyConnected
         return $next($request);
     }
 }
+

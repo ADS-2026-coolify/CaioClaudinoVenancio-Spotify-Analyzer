@@ -177,3 +177,4 @@ class MusicInsightsService
         return $insights;
     }
 }
+
