@@ -250,3 +250,4 @@ php artisan test
 ## 📄 Licença
 
 Distribuído sob a licença MIT. Consulte `LICENSE` para mais informações.
+

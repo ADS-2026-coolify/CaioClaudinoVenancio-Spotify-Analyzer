@@ -86,3 +86,4 @@ volumes:
 networks:
   spotify_network:
     driver: bridge
+
